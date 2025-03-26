@@ -14,7 +14,7 @@
     "description": "PHP wrapper for TMDB (TheMovieDatabase) API v3. Supports two types of approaches, one modelled with repositories, models and factories. And the other by simple array access to RAW data from The Movie Database.",
     "extra": {
         "branch-alias": {
-            "dev-master": "4.0-dev"
+            "dev-master": "5.0-dev"
         }
     },
     "homepage": "https://github.com/php-tmdb/api",
@@ -33,7 +33,7 @@
     "require": {
         "php": "^7.3 || ^8.0",
         "ext-json": "*",
-        "symfony/options-resolver": "^4.4 || ^5 || ^6",
+        "symfony/options-resolver": "^4.4 || ^5 || ^6 || ^7",
         "psr/cache": "^1 || ^2 || ^3",
         "psr/simple-cache": "^1 || ^2 || ^3",
         "psr/event-dispatcher": "^1",
