@@ -5,10 +5,12 @@
 [![Build Status](https://img.shields.io/github/actions/workflow/status/php-tmdb/api/continuous-integration.yml?label=phpunit)](https://github.com/php-tmdb/api/actions/workflows/continuous-integration.yml)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/php-tmdb/api/coding-standards.yml?label=phpcs)](https://github.com/php-tmdb/api/actions/workflows/coding-standards.yml)
 [![codecov](https://img.shields.io/codecov/c/github/php-tmdb/api?token=gTM9AiO5vH)](https://codecov.io/gh/php-tmdb/api)
-[![PHP](https://img.shields.io/badge/php->=7.3,%20>=7.4,%20>=8.0-8892BF.svg)](https://packagist.org/packages/php-tmdb/api)
+[![PHP](https://img.shields.io/badge/php-%5E8.3-8892BF.svg)](https://packagist.org/packages/php-tmdb/api)
 [![Total Downloads](https://poser.pugx.org/php-tmdb/api/downloads.svg)](https://packagist.org/packages/php-tmdb/api)
 
-Tests run with minimal, normal and development dependencies.
+Requires PHP 8.3 or newer.
+
+Tests run with minimal, normal and development dependencies across supported PHP releases.
 
 ## Buy me a coffee, or a beer :-)
 
@@ -40,7 +42,7 @@ with PSR standards, register the listeners, and we handle the rest.
     - Logs PSR-18 client exceptions, [jump to section](#tmdbeventlistenerloggerloghttpmessagelistener).
     - Logs requests and responses, [jump to section](#tmdbeventlistenerloggerloghttpmessagelistener).
     - Logs response hydration, [jump to section](#tmdbeventlistenerloggerloghydrationlistener).
-    - Logs caching behavior , [jump to section](#todo).
+    - Logs caching behavior, see the caching section below.
 - [PSR-6: Caching Interface](https://www.php-fig.org/psr/psr-6/), [jump to section](#caching).
 - [PSR-7: HTTP Message Interface](https://www.php-fig.org/psr/psr-7/)
     - Requests and responses will be modified via relevant event listeners.
@@ -105,7 +107,7 @@ _Optional dependencies_
 If the required dependencies above are met, you are ready to install the library.
 
 ```shell script
-composer require php-tmdb/api:^4
+composer require php-tmdb/api:^5
 ```
 
 Include Composer's autoloader:
@@ -127,22 +129,22 @@ We also provide a bunch of examples in the `examples/` folder.
 To get started;
 
 ```shell script
-composer require php-tmdb/api:^4 symfony/event-dispatcher guzzlehttp/guzzle symfony/cache monolog/monolog nyholm/psr7
+composer require php-tmdb/api:^5 symfony/event-dispatcher guzzlehttp/guzzle symfony/cache monolog/monolog nyholm/psr7
 ```
 
 Now that we have everything we need installed, let's get started setting up to be able to use the library.
 
 ## Quick setup
 
-Review the setup files below and go over the [examples](examples/) folder, for example 
-[examples/movies/api/get.php](examples/movies/model/get.php) or [examples/movies/api/get.php](examples/movies/api/get.php) files.
+Review the setup files below and go over the `examples/` folder, for example
+`examples/movies/model/get.php` or `examples/movies/api/get.php`.
 
 ## Constructing the Client
 
 _If you have chosen different implementations than the examples suggested beforehand, obviously all the upcoming documentation won't match. Adjust accordingly to your dependencies, we will go along with the examples given earlier._
 
 - [Minimal setup](examples/setup-client.php)
-- [Minimal setup with psr-6 caching](examples/setup-client-cache-psr6.php)
+- [Minimal setup with psr-6 caching](examples/caching.php)
 - [Full setup](examples/setup-client-full.php)
     - Includes logging
     - Includes caching
@@ -171,7 +173,7 @@ $client = new Client();
 $movie = $client->getMoviesApi()->getMovie(550, ['language' => 'en']);
 ```
 
-For all further calls just review the [unit tests](test/Tmdb/Tests) or [examples](examples/) provided, or the API classes themselves.
+For all further calls just review the `test/Tmdb/Tests` suite, the `examples/` directory, or the API classes themselves.
 
 ## Model Usage
 
@@ -203,7 +205,7 @@ $topRated = $repository->getTopRated(['page' => 3]);
 $popular = $repository->getPopular();
 ```
 
-For all further calls just review the [unit tests](test/Tmdb/Tests) or [examples](examples/) provided, or the model's themselves.
+For all further calls just review the `test/Tmdb/Tests` suite, the `examples/` directory, or the models themselves.
 
 ## Event Dispatching
 

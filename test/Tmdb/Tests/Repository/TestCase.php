@@ -18,7 +18,6 @@ use Psr\Http\Client\ClientInterface;
 use Tmdb\Tests\TestCase as Base;
 use Tmdb\Client;
 
-#[\AllowDynamicProperties]
 abstract class TestCase extends Base
 {
     protected $repository;
@@ -41,10 +40,6 @@ abstract class TestCase extends Base
     {
         $this->_client = $this->getClientWithMockedHttpClient($methods);
 
-        if ($sessionToken) {
-            $this->_client->setSessionToken($sessionToken);
-        }
-
         $repositoryClass = $this->getRepositoryClass();
 
         return new $repositoryClass($this->_client);
@@ -59,11 +54,14 @@ abstract class TestCase extends Base
 
     protected function getRepositoryMock($client = null, array $methods = [])
     {
-        if ($client == null) {
-            $client  = $this->getMockedTmdbClient();
+        if ($client === null) {
+            $client = $this->getMockedTmdbClient();
         }
 
-        return $this->getMock($this->getRepositoryClass(), array_merge(['getApi'], $methods), [$client]);
+        return $this->getMockBuilder($this->getRepositoryClass())
+            ->onlyMethods(array_merge(['getApi'], $methods))
+            ->setConstructorArgs([$client])
+            ->getMock();
     }
 
     /**

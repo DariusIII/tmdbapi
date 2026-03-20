@@ -14,12 +14,10 @@
 
 namespace Tmdb\Tests\Api;
 
-use PHPUnit_Framework_MockObject_MockObject;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Tmdb\Token\Api\ApiToken;
 use Tmdb\Client;
-use Tmdb\Common\ParameterBag;
 use Tmdb\Tests\TestCase as Base;
 use Tmdb\Token\Session\GuestSessionToken;
 
@@ -56,7 +54,7 @@ abstract class TestCase extends Base
      * @param array $methods
      * @param array $clientMethods
      * @param GuestSessionToken|null $sessionToken
-     * @return PHPUnit_Framework_MockObject_MockObject
+     * @return object
      */
     protected function getMockedApi(array $methods = [], array $clientMethods = [], $guestSessionToken = null)
     {
@@ -66,10 +64,14 @@ abstract class TestCase extends Base
             $this->_client->setGuestSessionToken($guestSessionToken);
         }
 
-        return $this->_api = $this->getMockBuilder($this->getApiClass())
-            ->setMethods($methods)
-            ->setConstructorArgs([$this->_client])
-            ->getMock();
+        $builder = $this->getMockBuilder($this->getApiClass())
+            ->setConstructorArgs([$this->_client]);
+
+        if ($methods !== []) {
+            $builder->onlyMethods($methods);
+        }
+
+        return $this->_api = $builder->getMock();
     }
 
     /**
@@ -82,7 +84,7 @@ abstract class TestCase extends Base
         return [
             'secure' => false,
             'base_url' => 'http://api.themoviedb.org/3/',
-            'headers' => new ParameterBag(['accept' => 'application/json']),
+            'headers' => ['accept' => 'application/json'],
             'token' => new ApiToken('abcdef')
         ];
     }
@@ -117,7 +119,7 @@ abstract class TestCase extends Base
      */
     protected function getPsr18Client()
     {
-        return clone $this->_client->getHttpClient()->getPsr18Client();
+        return $this->_client->getHttpClient()->getPsr18Client();
     }
 
     /**

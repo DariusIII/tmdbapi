@@ -16,7 +16,6 @@ namespace Tmdb\Api;
 
 use JsonException;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
 use Tmdb\Client;
 use Tmdb\Exception\InvalidArgumentException;
 use Tmdb\Exception\UnexpectedResponseException;
@@ -192,19 +191,24 @@ abstract class AbstractApi implements ApiInterface
      * @param ResponseInterface $response
      * @return array
      */
-    private function decodeResponse(ResponseInterface $response)
+    private function decodeResponse(ResponseInterface $response): array
     {
+        $contents = '';
+
         try {
-            if ($response->getBody() instanceof StreamInterface) {
-                return json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+            $contents = (string) $response->getBody();
+
+            if (trim($contents) === '') {
+                return [];
             }
 
-            return [];
+            return json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             throw new UnexpectedResponseException(
                 sprintf(
                     'Unable to decode response with body "%s", %s.',
-                    (string)$response->getBody(),
+                    $contents,
                     json_last_error_msg()
                 ),
                 $response->getStatusCode(),

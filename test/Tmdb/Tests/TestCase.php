@@ -15,6 +15,7 @@
 namespace Tmdb\Tests;
 
 use Http\Discovery\Psr17FactoryDiscovery;
+use Psr\Http\Message\RequestInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Tmdb\Event\BeforeRequestEvent;
 use Tmdb\Event\Listener\RequestListener;
@@ -22,12 +23,9 @@ use Tmdb\Event\RequestEvent;
 use Tmdb\Token\Api\ApiToken;
 use Tmdb\Client;
 use Tmdb\Common\ObjectHydrator;
-use Tmdb\Common\ParameterBag;
 use Tmdb\Event\Listener\Request\AcceptJsonRequestListener;
 use Tmdb\Event\Listener\Request\ApiTokenRequestListener;
 use Tmdb\Event\Listener\Request\ContentTypeJsonRequestListener;
-use Tmdb\HttpClient\HttpClient;
-use Tmdb\HttpClient\Request;
 
 abstract class TestCase extends \PHPUnit\Framework\TestCase
 {
@@ -89,7 +87,12 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
 
         $options['api_token'] = new ApiToken('abcdef');
         $options['http']['client'] = new \Http\Mock\Client();
-        $response = $this->createMock('Psr\Http\Message\ResponseInterface');
+        $responseFactory = Psr17FactoryDiscovery::findResponseFactory();
+        $streamFactory = Psr17FactoryDiscovery::findStreamFactory();
+        $response = $responseFactory
+            ->createResponse(200)
+            ->withHeader('content-type', 'application/json; charset=utf-8')
+            ->withBody($streamFactory->createStream('{}'));
         $options['http']['client']->setDefaultResponse($response);
 
         $client = new Client($options);
@@ -120,11 +123,6 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         return $client;
     }
 
-    public function getAdapterMock()
-    {
-        return $this->createMock('Tmdb\HttpClient\Adapter\AdapterInterface');
-    }
-
     /**
      * Get TMDB Client
      *
@@ -141,37 +139,6 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    /**
-     * Get mocked http client
-     *
-     * @param  string                                   $baseUrl
-     * @param  array                                    $options
-     * @return \PHPUnit_Framework_MockObject_MockObject
-     */
-    protected function getHttpClientWithMockedAdapter($baseUrl, array $options = [])
-    {
-        return $this->_client = new HttpClient(
-            $baseUrl,
-            $options,
-            $this->createMock('Tmdb\HttpClient\Adapter\AdapterInterface'),
-            $this->createMock('Symfony\Component\EventDispatcher\EventDispatcher')
-        );
-    }
-
-    /**
-     * Get mocked http client
-     *
-     * @param  array                                    $methods
-     * @return \PHPUnit_Framework_MockObject_MockObject
-     */
-    protected function getMockedHttpClient(array $methods = [])
-    {
-        if (!in_array('send', $methods)) {
-            $methods[] = 'send';
-        }
-
-        return $this->getMockBuilder('Guzzle\Http\Client')->setMethods($methods)->getMock();
-    }
 
     /**
      * Get the expected request that will deliver a response
@@ -181,7 +148,7 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
      * @param  string  $method
      * @param  array   $headers
      * @param  null    $body
-     * @return Request
+     * @return RequestInterface
      */
     protected function getRequest($url, $parameters = [], $method = 'GET', $headers = [], $body = null)
     {
@@ -199,6 +166,14 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         $headers['Accept']     = 'application/json';
         $headers['User-Agent'] = sprintf('php-tmdb/api (v%s)', Client::VERSION);
 
+        if (!empty($parameters)) {
+            ksort($parameters);
+        }
+
+        if (!empty($headers)) {
+            ksort($headers);
+        }
+
         $baseUri = 'https://api.themoviedb.org/3/';
         if (strpos($url, $baseUri) === 0) {
             $path = substr($url, strlen($baseUri));
@@ -206,45 +181,25 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
             $path = $url;
         }
 
-        $request = new Request(
-            $path,
+        $uri = empty($parameters)
+            ? sprintf('%s%s', $baseUri, $path)
+            : sprintf('%s%s?%s', $baseUri, $path, http_build_query($parameters));
+
+        $request = Psr17FactoryDiscovery::findRequestFactory()->createRequest(
             $method,
-            new ParameterBag($parameters),
-            new ParameterBag($headers)
+            Psr17FactoryDiscovery::findUriFactory()->createUri($uri)
         );
 
-        $responseFactory = Psr17FactoryDiscovery::findResponseFactory();
-        $request->setOptions(new ParameterBag([
-            'token'   => new ApiToken('abcdef'),
-            'secure'  => true,
-            'cache'   => [
-                'enabled' => false,
-//                'adapter' => new FilesystemCache(sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'php-tmdb-api'),
-                'path'    => sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'php-tmdb-api',
-                'subscriber' => null
-            ],
-            'log'     => [
-                'enabled' => false,
-                'level'   => 'debug',
-                'adapter' => null,
-                'path'    => sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'php-tmdb-api.log',
-                'subscriber' => null
-            ],
-            'http' => [
-                'client' => new \Http\Mock\Client($responseFactory),
-                'request_factory' => Psr17FactoryDiscovery::findRequestFactory(),
-                'response_factory' => $responseFactory,
-                'stream_factory' => Psr17FactoryDiscovery::findStreamFactory(),
-                'uri_factory' => Psr17FactoryDiscovery::findUriFactory(),
-            ],
-            'host'    => 'api.themoviedb.org/3/',
-            'base_uri' => $baseUri,
-            'guest_session_token' => null,
-            'event_dispatcher' => ['adapter' => $this->eventDispatcher]
-        ]));
+        foreach ($headers as $name => $value) {
+            $request = $request->withHeader($name, $value);
+        }
 
         if ($body !== null) {
-            $request->setBody(is_array($body) ? json_encode($body) : $body);
+            $request = $request->withBody(
+                Psr17FactoryDiscovery::findStreamFactory()->createStream(
+                    is_array($body) ? json_encode($body) : $body
+                )
+            );
         }
 
         return $request;
